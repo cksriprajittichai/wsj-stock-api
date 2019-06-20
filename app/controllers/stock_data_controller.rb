@@ -45,12 +45,12 @@ class StockDataController < ActionController::Base
             dates = content.scan /\d{2}\/\d{2}\/\d{2}/
             if dates.length == 1
               metadata['type'] = 'date'
-              metadata['value'] = dates.first
+              metadata['value'] = Date.strptime(dates.first, '%m/%d/%y')
             elsif dates.length == 2
               metadata['type'] = 'date_range'
               metadata['value'] = {
-                'start': dates.first,
-                'end': dates.last
+                'start': Date.strptime(dates.first, '%m/%d/%y'),
+                'end': Date.strptime(dates.last, '%m/%d/%y')
               }
             else
               metadata['type'] = 'text'
@@ -70,11 +70,11 @@ class StockDataController < ActionController::Base
 
   def parse_short_interest_data doc
     container_div = doc.at_css 'div.cr_data_points:nth-child(2)'
-    date = container_div.at_css('h3:nth-child(2) > span:nth-child(1)').content.strip
+    date = container_div.at_css('h3:nth-child(2) > span:nth-child(1)').content.match /\d{2}\/\d{2}\/\d{2}/
     data_divs = container_div.css 'div.cr_data_field'
 
     result = {
-      'date': date
+      'date': date.to_s
     }
 
     data_divs.each do |div|
