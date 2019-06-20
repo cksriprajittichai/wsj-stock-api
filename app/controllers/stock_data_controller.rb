@@ -5,46 +5,101 @@ class StockDataController < ActionController::Base
 
   def show
     doc = Nokogiri::HTML(open("https://quotes.wsj.com/#{params[:symbol]}"))
-    data_divs = doc.css('div.cr_data_points:nth-child(1) > ul:nth-child(3) div.cr_data_field')
 
-    result = Hash.new
+    key_stock_data = parse_key_stock_data doc
+    short_interest_data = parse_short_interest_data doc
 
-    data_divs.each do |div|
-      key = div.at_css('h5.data_lbl')
-      value = div.at_css('span.data_data')
-
-      data = Hash.new
-      
-      value.children.each do |child|
-        next if node_is_blank? child
-
-        if child.text?
-          data['value'] = child.content.strip
-          next
-        end
-
-        if child.element?
-          if child.name == 'sup'
-            data['prefix'] = child.content.strip
-            next
-          end
-
-          if child['class'] == 'data_meta'
-            data['metadata'] = child.content.strip
-            next
-          end
-        end
-      end
-
-      result[key.content.strip] = data
-    end
-    
-    render json: result
+    render json: {
+      'key_stock_data': key_stock_data,
+      'short_interest_data': short_interest_data
+    }
   end
 
 
   private
 
+
+  def parse_key_stock_data doc
+    data_divs = doc.css 'div.cr_data_points:nth-child(1) > ul:nth-child(3) div.cr_data_field'
+
+    result = Hash.new
+
+    data_divs.each do |div|
+      key_el = div.at_css 'h5.data_lbl'
+      value_el = div.at_css 'span.data_data'
+
+      data = Hash.new
+      
+      value_el.children.each do |child|
+        next unless node_is_present? child
+
+        content = child.content.strip
+
+        if child.text?
+          data['value'] = content
+        elsif child.element?
+          if child.name == 'sup'
+            data['prefix'] = content
+          elsif child['class'] == 'data_meta'
+            metadata = Hash.new
+            dates = content.scan /\d{2}\/\d{2}\/\d{2}/
+            if dates.length == 1
+              metadata['type'] = 'date'
+              metadata['value'] = dates.first
+            elsif dates.length == 2
+              metadata['type'] = 'date_range'
+              metadata['value'] = {
+                'start': dates.first,
+                'end': dates.last
+              }
+            else
+              metadata['type'] = 'text'
+              metadata['value'] = content
+            end
+
+            data['metadata'] = metadata
+          end
+        end
+      end
+
+      result[key_el.content.strip] = data
+    end
+
+    result
+  end
+
+  def parse_short_interest_data doc
+    container_div = doc.at_css 'div.cr_data_points:nth-child(2)'
+    date = container_div.at_css('h3:nth-child(2) > span:nth-child(1)').content.strip
+    data_divs = container_div.css 'div.cr_data_field'
+
+    result = {
+      'date': date
+    }
+
+    data_divs.each do |div|
+      key_el = div.at_css 'h5.data_lbl'
+      value_el = div.at_css 'span.data_data'
+
+      data = Hash.new
+
+      value_el.children.each do |child|
+        next unless node_is_present? child
+
+        content = child.content.strip
+
+        if child.element? && child['class'].start_with?('marketDelta') && child['class'].end_with?('negative')
+          data['value'] = "-#{content}"
+        else
+          data['value'] = content
+        end
+      end
+
+      result[key_el.content.strip] = data
+    end
+
+    result
+  end
 
   def node_is_blank? node
     (node.text? && node.content.strip.empty?) || (node.element? && node.name == 'br')
