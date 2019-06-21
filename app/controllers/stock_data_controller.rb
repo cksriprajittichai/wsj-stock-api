@@ -1,10 +1,7 @@
-require 'nokogiri'
-require 'open-uri'
-
 class StockDataController < ActionController::Base
 
   def show
-    doc = Nokogiri::HTML(open("https://quotes.wsj.com/#{params[:symbol]}"))
+    doc = NokogiriUtil::get_html "https://quotes.wsj.com/#{params[:symbol]}"
 
     key_stock_data = parse_key_stock_data doc
     short_interest_data = parse_short_interest_data doc
@@ -31,7 +28,7 @@ class StockDataController < ActionController::Base
       data = Hash.new
       
       value_el.children.each do |child|
-        next unless node_is_present? child
+        next unless NokogiriUtil::node_is_present? child
 
         content = child.content.strip
 
@@ -84,7 +81,7 @@ class StockDataController < ActionController::Base
       data = Hash.new
 
       value_el.children.each do |child|
-        next unless node_is_present? child
+        next unless NokogiriUtil::node_is_present? child
 
         content = child.content.strip
 
@@ -99,14 +96,6 @@ class StockDataController < ActionController::Base
     end
 
     result
-  end
-
-  def node_is_blank? node
-    (node.text? && node.content.strip.empty?) || (node.element? && node.name == 'br')
-  end
-
-  def node_is_present? node
-    !node_is_blank? node
   end
 
 end
