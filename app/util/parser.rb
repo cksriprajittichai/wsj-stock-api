@@ -8,13 +8,11 @@ module Parser
     data_divs = doc.css('div.cr_data_points:nth-child(1) > ul:nth-child(3) div.cr_data_field')
 
     result = {}
-
     data_divs.each do |div|
       key_el = div.at_css('h5.data_lbl')
       value_el = div.at_css('span.data_data')
 
       data = {}
-      
       value_el.children.each do |child|
         next unless NokogiriUtil::node_is_present?(child)
 
@@ -62,20 +60,14 @@ module Parser
     date_s = container_div.at_css('h3:nth-child(2) > span:nth-child(1)').content.match(DATE_REGEX).to_s
     data_divs = container_div.css('div.cr_data_field')
 
-    result = {
-      'date': NokogiriUtil::parse_date(date_s)
-    }
-
+    result = { 'date': NokogiriUtil::parse_date(date_s) }
     data_divs.each do |div|
       key_el = div.at_css('h5.data_lbl')
       value_el = div.at_css('span.data_data')
 
       data = {}
-
       value_el.children.each do |child|
-        next unless NokogiriUtil::node_is_present?(child)
-
-        data['value'] = child.content.strip
+        data['value'] = child.content.strip unless NokogiriUtil::node_is_blank?(child)
       end
 
       result[key_el.content.strip] = data
