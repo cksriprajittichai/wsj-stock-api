@@ -75,10 +75,7 @@ module Parser
       value_el.children.each do |child|
         next unless NokogiriUtil::node_is_present?(child)
 
-        content = child.content.strip
-
-        negative_number = child.element? && child['class'].start_with?('marketDelta') && child['class'].end_with?('negative')
-        data['value'] = negative_number ? "-#{content}" : content
+        data['value'] = child.content.strip
       end
 
       result[key_el.content.strip] = data
