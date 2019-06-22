@@ -1,6 +1,10 @@
+# frozen_string_literal: true
+
 require 'open-uri'
 
 module NokogiriUtil
+
+  EXPECTED_DATE_FORMAT = '%m/%d/%y'.freeze
 
   def self.get_html(url)
     Nokogiri::HTML(open(url))
@@ -15,7 +19,7 @@ module NokogiriUtil
   end
 
   def self.parse_date(date_s)
-    Date.strptime(date_s, '%m/%d/%y')
+    Date.strptime(date_s, EXPECTED_DATE_FORMAT)
   end
 
 end

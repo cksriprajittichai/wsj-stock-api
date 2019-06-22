@@ -1,17 +1,19 @@
-class Parser
+# frozen_string_literal: true
 
-  DATE_REGEX = /\d{2}\/\d{2}\/\d{2}/
+module Parser
+
+  DATE_REGEX = /\d{2}\/\d{2}\/\d{2}/.freeze
 
   def self.parse_key_stock_data(doc)
     data_divs = doc.css('div.cr_data_points:nth-child(1) > ul:nth-child(3) div.cr_data_field')
 
-    result = Hash.new
+    result = {}
 
     data_divs.each do |div|
       key_el = div.at_css('h5.data_lbl')
       value_el = div.at_css('span.data_data')
 
-      data = Hash.new
+      data = {}
       
       value_el.children.each do |child|
         next unless NokogiriUtil::node_is_present?(child)
@@ -19,16 +21,12 @@ class Parser
         content = child.content.strip
 
         if child.text?
-          if content.match(DATE_REGEX)
-            data['value'] = NokogiriUtil.parse_date(content)
-          else
-            data['value'] = content
-          end
+          data['value'] = content.match(DATE_REGEX) ? NokogiriUtil.parse_date(content) : content
         elsif child.element?
           if child.name == 'sup'
             data['prefix'] = content
           elsif child['class'] == 'data_meta'
-            metadata = Hash.new
+            metadata = {}
             dates = content.scan DATE_REGEX
             case dates.length
             when 0
@@ -72,18 +70,15 @@ class Parser
       key_el = div.at_css('h5.data_lbl')
       value_el = div.at_css('span.data_data')
 
-      data = Hash.new
+      data = {}
 
       value_el.children.each do |child|
         next unless NokogiriUtil::node_is_present?(child)
 
         content = child.content.strip
 
-        if child.element? && child['class'].start_with?('marketDelta') && child['class'].end_with?('negative')
-          data['value'] = "-#{content}"
-        else
-          data['value'] = content
-        end
+        negative_number = child.element? && child['class'].start_with?('marketDelta') && child['class'].end_with?('negative')
+        data['value'] = negative_number ? "-#{content}" : content
       end
 
       result[key_el.content.strip] = data
