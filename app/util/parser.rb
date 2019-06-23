@@ -19,32 +19,32 @@ module Parser
         content = child.content.strip
 
         if child.text?
-          data['value'] = content.match(DATE_REGEX) ? NokogiriUtil.parse_date(content) : content
+          data[ResponseConstants::Keys::VALUE] = content.match(DATE_REGEX) ? NokogiriUtil.parse_date(content) : content
         elsif child.element?
           if child.name == 'sup'
-            data['prefix'] = content
+            data[ResponseConstants::Keys::PREFIX] = content
           elsif child['class'] == 'data_meta'
             metadata = {}
             dates = content.scan DATE_REGEX
             case dates.length
             when 0
-              metadata['type'] = 'text'
-              metadata['value'] = content
+              metadata[ResponseConstants::Keys::TYPE] = ResponseConstants::ValueTypes::TEXT
+              metadata[ResponseConstants::Keys::VALUE] = content
             when 1
-              metadata['type'] = 'date'
-              metadata['value'] = NokogiriUtil::parse_date(dates.first)
+              metadata[ResponseConstants::Keys::TYPE] = ResponseConstants::ValueTypes::DATE
+              metadata[ResponseConstants::Keys::VALUE] = NokogiriUtil::parse_date(dates.first)
             when 2
-              metadata['type'] = 'date_range'
-              metadata['value'] = {
-                'start': NokogiriUtil::parse_date(dates.first),
-                'end': NokogiriUtil::parse_date(dates.last)
+              metadata[ResponseConstants::Keys::TYPE] = ResponseConstants::ValueTypes::DATE_RANGE
+              metadata[ResponseConstants::Keys::VALUE] = {
+                ResponseConstants::Keys::START_DATE => NokogiriUtil::parse_date(dates.first),
+                ResponseConstants::Keys::END_DATE => NokogiriUtil::parse_date(dates.last)
               }
             else
-              metadata['type'] = 'dates'
-              metadata['value'] = dates.map { |date_s| NokogiriUtil::parse_date(date_s) }
+              metadata[ResponseConstants::Keys::TYPE] = ResponseConstants::ValueTypes::DATES
+              metadata[ResponseConstants::Keys::VALUE] = dates.map { |date_s| NokogiriUtil::parse_date(date_s) }
             end
 
-            data['metadata'] = metadata
+            data[ResponseConstants::Keys::METADATA] = metadata
           end
         end
       end
@@ -60,14 +60,14 @@ module Parser
     date_s = container_div.at_css('h3:nth-child(2) > span:nth-child(1)').content.match(DATE_REGEX).to_s
     data_divs = container_div.css('div.cr_data_field')
 
-    result = { 'date': NokogiriUtil::parse_date(date_s) }
+    result = { ResponseConstants::Keys::DATE => NokogiriUtil::parse_date(date_s) }
     data_divs.each do |div|
       key_el = div.at_css('h5.data_lbl')
       value_el = div.at_css('span.data_data')
 
       data = {}
       value_el.children.each do |child|
-        data['value'] = child.content.strip unless NokogiriUtil::node_is_blank?(child)
+        data[ResponseConstants::Keys::VALUE] = child.content.strip unless NokogiriUtil::node_is_blank?(child)
       end
 
       result[key_el.content.strip] = data

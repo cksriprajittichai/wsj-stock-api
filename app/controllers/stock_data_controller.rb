@@ -6,8 +6,8 @@ class StockDataController < ActionController::Base
     doc = NokogiriUtil::get_html("https://quotes.wsj.com/#{params[:symbol]}")
 
     render json: {
-      'key_stock_data': Parser::parse_key_stock_data(doc),
-      'short_interest_data': Parser::parse_short_interest_data(doc)
+      ResponseConstants::Keys::KEY_STOCK_DATA_KEY => Parser::parse_key_stock_data(doc),
+      ResponseConstants::Keys::SHORT_INTEREST_DATA_KEY => Parser::parse_short_interest_data(doc)
     }
   end
 
